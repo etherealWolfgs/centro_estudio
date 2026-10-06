@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APX BBVA - Java Architect Certification Lab</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* Tema oscuro tipo IDE (IntelliJ / VSCode) */
+        body { background-color: #0f172a; color: #e2e8f0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .ide-bg { background-color: #1e293b; }
+        .ide-border { border-color: #334155; }
+        .keyword { color: #c678dd; } /* Morado */
+        .string { color: #98c379; } /* Verde */
+        .type { color: #e5c07b; } /* Amarillo */
+        .comment { color: #64748b; font-style: italic; }
+        
+        pre code { font-family: 'Courier New', Courier, monospace; font-size: 0.9rem; }
+        
+        /* Animaciones para laboratorios */
+        .transition-all { transition: all 0.3s ease-in-out; }
+        .fade-in { animation: fadeIn 0.4s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .memory-block { transition: transform 0.2s; cursor: pointer; }
+        .memory-block:hover { transform: scale(1.05); }
+        .beam { border-left: 2px dashed #3b82f6; height: 30px; margin-left: 20px; }
+        
+        /* Scrollbar styling */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden text-sm">
+
+    <!-- Sidebar de Navegación -->
+    <aside class="w-64 ide-bg border-r ide-border flex flex-col justify-between">
+        <div>
+            <div class="p-6 text-center border-b ide-border">
+                <i class="fa-solid fa-code text-4xl text-blue-500 mb-2"></i>
+                <h1 class="text-xl font-bold text-white tracking-wide">APX <span class="text-blue-500">CERT</span></h1>
+                <p class="text-xs text-gray-400 mt-1">Neuro-Interactive Lab</p>
+            </div>
+            <nav class="mt-4 flex flex-col gap-1 px-2">
+                <button onclick="App.navigate('dashboard')" class="nav-btn p-3 rounded text-left hover:bg-slate-700 active-nav text-white font-semibold transition-all">
+                    <i class="fa-solid fa-chart-pie w-6"></i> Tablero de Progreso
+                </button>
+                <div class="text-xs font-bold text-gray-500 uppercase px-3 pt-4 pb-2">Pabellones (Toco, Juego, Aprendo)</div>
+                <button onclick="App.navigate('lab1')" class="nav-btn p-3 rounded text-left hover:bg-slate-700 text-gray-300 transition-all">
+                    <i class="fa-solid fa-microchip w-6 text-green-400"></i> Lab 1: JVM & Memoria
+                </button>
+                <button onclick="App.navigate('lab2')" class="nav-btn p-3 rounded text-left hover:bg-slate-700 text-gray-300 transition-all">
+                    <i class="fa-brands fa-envira w-6 text-green-500"></i> Lab 2: Spring DI
+                </button>
+                <button onclick="App.navigate('lab3')" class="nav-btn p-3 rounded text-left hover:bg-slate-700 text-gray-300 transition-all">
+                    <i class="fa-solid fa-filter w-6 text-purple-400"></i> Lab 3: Streams Pipeline
+                </button>
+                <div class="text-xs font-bold text-gray-500 uppercase px-3 pt-4 pb-2">Simulador de Examen</div>
+                <button onclick="App.setupExam('practice')" class="nav-btn p-3 rounded text-left hover:bg-slate-700 text-gray-300 transition-all">
+                    <i class="fa-solid fa-graduation-cap w-6 text-blue-400"></i> Modo Práctica
+                </button>
+                <button onclick="App.setupExam('real')" class="nav-btn p-3 rounded text-left hover:bg-slate-700 text-gray-300 transition-all">
+                    <i class="fa-solid fa-stopwatch w-6 text-red-400"></i> Examen de Certificación
+                </button>
+            </nav>
+        </div>
+        <div class="p-4 border-t ide-border text-xs text-center text-gray-500">
+            BBVA / APX Framework V2.0
+        </div>
+    </aside>
+
+    <!-- Contenido Principal -->
+    <main class="flex-1 overflow-y-auto relative bg-slate-900" id="main-content">
+        <!-- Vistas Inyectadas por JS -->
+    </main>
+
+    <script>
+        // ==========================================
+        // 1. BASE DE DATOS DE PREGUNTAS (El Cerebro)
+        // ==========================================
+        const questionsDB = [
+            // MÓDULO 1: Java Básico
+            {
+                module: 1, title: "Java Básico",
+                text: "¿Cuál es el resultado de compilar y ejecutar el siguiente código?",
+                code: `public class Test {\n    public static void main(String[] args) {\n        int x = 5;\n        System.out.println(x++ + ++x);\n    }\n}`,
+                options: ["10", "11", "12", "13", "Error de compilación"],
+                answer: 2,
+                hint: {
+                    explanation: "Post-incremento (x++) evalúa a 5 y luego x se hace 6. Pre-incremento (++x) incrementa x a 7 y evalúa a 7. Por lo tanto, 5 + 7 = 12.",
+                    oracle: "https://docs.oracle.com/javase/tutorial/java/nutsandbolts/op1.html",
+                    extra: "GeeksforGeeks: Increment and Decrement Operators in Java"
+                }
+            },
+            {
+                module: 1, title: "Java Básico",
+                text: "Dada la inmutabilidad de los Strings, ¿qué se imprime en consola?",
+                code: `String s1 = "Java";\nString s2 = new String("Java");\ns1.concat(" 17");\nSystem.out.println(s1 == s2);\nSystem.out.println(s1);`,
+                options: ["false \\n Java 17", "true \\n Java", "false \\n Java", "true \\n Java 17"],
+                answer: 2,
+                hint: {
+                    explanation: "s1 y s2 apuntan a objetos diferentes (s1 en el String Pool, s2 en el Heap). `==` compara referencias, así que es `false`. Los String son inmutables; `concat` devuelve un nuevo String que no se asigna a nada, por lo que `s1` sigue siendo 'Java'.",
+                    oracle: "https://docs.oracle.com/javase/8/docs/api/java/lang/String.html",
+                    extra: "Baeldung: Java String Pool"
+                }
+            },
+            {
+                module: 1, title: "Java Básico",
+                text: "¿Qué ocurre con el siguiente bloque switch?",
+                code: `final int a = 1;\nint b = 2;\nswitch (b) {\n    case a: System.out.print("A");\n    case 2: System.out.print("B");\n    default: System.out.print("C");\n}`,
+                options: ["B", "BC", "ABC", "Error de compilación"],
+                answer: 1,
+                hint: {
+                    explanation: "Como `a` es una variable `final` inicializada en tiempo de compilación (constante), es válida como `case`. `b` es 2, entra en `case 2`. Al no haber `break`, ocurre el efecto 'fall-through' e imprime 'B' y luego 'C'.",
+                    oracle: "https://docs.oracle.com/javase/tutorial/java/nutsandbolts/switch.html",
+                    extra: "W3Schools: Java Switch"
+                }
+            },
+            // MÓDULO 2: Herencia y Polimorfismo
+            {
+                module: 2, title: "Herencia y Polimorfismo",
+                text: "¿Qué regla aplica sobre la firma del método al sobreescribir (override) un método en Java?",
+                code: `class Parent {\n    protected Number doWork() throws IOException { return 1; }\n}\nclass Child extends Parent {\n    // ¿Qué firma es válida aquí?\n}`,
+                options: [
+                    "public Integer doWork() throws FileNotFoundException",
+                    "private Number doWork() throws Exception",
+                    "protected Object doWork() throws IOException",
+                    "public Number doWork() throws Exception"
+                ],
+                answer: 0,
+                hint: {
+                    explanation: "Reglas de Override: 1) Visibilidad igual o mayor (protected -> public es válido). 2) Tipo de retorno covariante (Integer hereda de Number, válido). 3) Excepciones lanzadas deben ser iguales o subclases (FileNotFoundException es subclase de IOException, válido).",
+                    oracle: "https://docs.oracle.com/javase/tutorial/java/IandI/override.html",
+                    extra: "GeeksforGeeks: Overriding in Java"
+                }
+            },
+            {
+                module: 2, title: "Herencia y Polimorfismo",
+                text: "¿Cuál es el resultado al invocar polimorfismo con campos y métodos estáticos?",
+                code: `class A { static void display() { System.out.print("A"); } }\nclass B extends A { static void display() { System.out.print("B"); } }\n\nA obj = new B();\nobj.display();`,
+                options: ["A", "B", "Error en tiempo de ejecución", "Error de compilación"],
+                answer: 0,
+                hint: {
+                    explanation: "Los métodos estáticos no se sobreescriben (override), se ocultan (hide). La resolución de métodos estáticos se hace en TIEMPO DE COMPILACIÓN basada en el tipo de referencia (A), no en el tipo de objeto (B). Por ende, llama a A.display().",
+                    oracle: "https://docs.oracle.com/javase/tutorial/java/IandI/override.html#static_methods",
+                    extra: "Baeldung: Method Hiding in Java"
+                }
+            },
+            {
+                module: 2, title: "Herencia y Polimorfismo",
+                text: "¿Cómo resolver un conflicto de métodos `default` en múltiples interfaces?",
+                code: `interface I1 { default void show() { System.out.print("I1"); } }\ninterface I2 { default void show() { System.out.print("I2"); } }\nclass MyClass implements I1, I2 { // ¿Cómo compila? }`,
+                options: [
+                    "Compila automáticamente, usa I1 por orden alfabético.",
+                    "Se debe sobreescribir show() y usar I1.super.show();",
+                    "La herencia múltiple de interfaces no permite métodos default.",
+                    "Lanza una NullPointerException en tiempo de ejecución."
+                ],
+                answer: 1,
+                hint: {
+                    explanation: "Para evitar el 'Problema del Diamante', si una clase implementa dos interfaces con el mismo método default, el compilador exige que la clase sobreescriba el método. Dentro, puede elegir cuál llamar usando `InterfaceName.super.methodName()`. ",
+                    oracle: "https://docs.oracle.com/javase/tutorial/java/IandI/defaultmethods.html",
+                    extra: "Baeldung: Java 8 Default Methods"
+                }
+            },
+            // MÓDULO 3: Excepciones y Patrones
+            {
+                module: 3, title: "Excepciones y Patrones",
+                text: "En un bloque multi-catch (Java 7+), ¿cuál de estas declaraciones es inválida?",
+                code: `try { \n  // código \n} catch(ExceptionA | ExceptionB e) { ... }`,
+                options: [
+                    "Cuando ExceptionA y ExceptionB no tienen relación de herencia.",
+                    "Cuando ExceptionB hereda de ExceptionA.",
+                    "Cuando ambas heredan de RuntimeException.",
+                    "Cuando se declara 'e' como final implícitamente."
+                ],
+                answer: 1,
+                hint: {
+                    explanation: "En un multi-catch, las alternativas NO pueden tener relación de subclase-superclase. Si ExceptionB hereda de ExceptionA, el compilador lanza error porque ExceptionA ya atraparía a ExceptionB, haciendo el código inalcanzable.",
+                    oracle: "https://docs.oracle.com/javase/7/docs/technotes/guides/language/catch-multiple.html",
+                    extra: "GeeksforGeeks: Catching Multiple Exceptions"
+                }
+            },
+            {
+                module: 3, title: "Excepciones y Patrones",
+                text: "¿Cuál es la característica principal del patrón de diseño Singleton (Implementación Thread-safe en Java)?",
+                code: `public class APXContext {\n    private static volatile APXContext instance;\n    private APXContext() {}\n    public static APXContext getInstance() {\n        if (instance == null) {\n            synchronized(APXContext.class) {\n                if (instance == null) instance = new APXContext();\n            }\n        }\n        return instance;\n    }\n}`,
+                options: [
+                    "Factory Method Singleton",
+                    "Eager Initialization",
+                    "Double-Checked Locking",
+                    "Dependency Injection"
+                ],
+                answer: 2,
+                hint: {
+                    explanation: "El código muestra Double-Checked Locking. Se revisa si la instancia es nula, se sincroniza el bloque, y se vuelve a revisar. El uso de `volatile` garantiza la visibilidad de memoria entre hilos y previene reordenamiento de instrucciones.",
+                    oracle: "https://docs.oracle.com/javase/specs/jls/se8/html/jls-8.html#jls-8.3.1.4",
+                    extra: "Baeldung: Singleton in Java"
+                }
+            },
+            {
+                module: 3, title: "Excepciones y Patrones",
+                text: "¿En qué orden se ejecutan las cláusulas en un Try-With-Resources?",
+                code: `try (Resource r = new Resource()) {\n    throw new Exception("Error try");\n} catch (Exception e) {\n    System.out.print("Catch");\n} finally {\n    System.out.print("Finally");\n}`,
+                options: [
+                    "Catch, Finally, Cierre de Recurso",
+                    "Cierre de Recurso, Catch, Finally",
+                    "Cierre de Recurso, Finally, Catch",
+                    "Catch, Cierre de Recurso, Finally"
+                ],
+                answer: 1,
+                hint: {
+                    explanation: "En un try-with-resources, el método `close()` del recurso (que implementa AutoCloseable) se invoca de manera implícita INMEDIATAMENTE después del bloque try, ANTES de que se evalúen los bloques catch o finally.",
+                    oracle: "https://docs.oracle.com/javase/tutorial/essential/exceptions/tryResourceClose.html",
+                    extra: "W3Schools: Java Exceptions"
+                }
+            },
+            // MÓDULO 4: Java Avanzado (Streams y Lambdas)
+            {
+                module: 4, title: "Java Avanzado",
+                text: "¿Cuál es la diferencia crítica entre `map()` y `flatMap()` en Java Streams?",
+                code: `List<List<String>> list = Arrays.asList(Arrays.asList("a"), Arrays.asList("b"));\n// map() vs flatMap()`,
+                options: [
+                    "map transforma elementos 1:1; flatMap aplana estructuras anidadas 1:N.",
+                    "map es perezoso (lazy); flatMap es una operación terminal.",
+                    "flatMap solo acepta primitivos; map acepta objetos.",
+                    "No hay diferencia, flatMap es un alias sintáctico."
+                ],
+                answer: 0,
+                hint: {
+                    explanation: "`map` aplica una función a cada elemento devolviendo un Stream del mismo tamaño. `flatMap` aplica una función que devuelve un Stream para cada elemento, y luego 'aplana' todos esos Streams en un único Stream resultante.",
+                    oracle: "https://docs.oracle.com/javase/8/docs/api/java/util/stream/Stream.html#flatMap-java.util.function.Function-",
+                    extra: "Baeldung: Difference Between map and flatMap"
+                }
+            },
+            {
+                module: 4, title: "Java Avanzado",
+                text: "En concurrencia, ¿qué método inicia la ejecución de un hilo real en el SO?",
+                code: `Thread t = new Thread(() -> System.out.println("Running"));\n// ¿Qué invocación inicia el hilo?`,
+                options: ["t.run()", "t.start()", "t.execute()", "t.init()"],
+                answer: 1,
+                hint: {
+                    explanation: "`t.start()` le pide a la JVM y al SO que asignen recursos y ejecuten el hilo concurrentemente. Si llamas directamente a `t.run()`, simplemente se ejecutará secuencialmente en el hilo actual (Main), perdiendo la concurrencia.",
+                    oracle: "https://docs.oracle.com/javase/8/docs/api/java/lang/Thread.html#start--",
+                    extra: "GeeksforGeeks: start() vs run() in Thread"
+                }
+            },
+            {
+                module: 4, title: "Java Avanzado",
+                text: "¿Cuál es el resultado de usar `Optional.ofNullable(null)` vs `Optional.of(null)`?",
+                code: `Optional<String> opt1 = Optional.ofNullable(null);\nOptional<String> opt2 = Optional.of(null);`,
+                options: [
+                    "Ambos devuelven Optional.empty()",
+                    "opt1 devuelve empty, opt2 lanza NullPointerException",
+                    "Ambos lanzan NullPointerException",
+                    "opt1 lanza NPE, opt2 devuelve empty"
+                ],
+                answer: 1,
+                hint: {
+                    explanation: "`Optional.ofNullable` está diseñado para manejar nulos devolviendo un Optional vacío de forma segura. `Optional.of` asume que el valor no es nulo y lanza inmediatamente un NullPointerException si se le pasa un null (Fail-fast).",
+                    oracle: "https://docs.oracle.com/javase/8/docs/api/java/util/Optional.html",
+                    extra: "Baeldung: Guide to Java 8 Optional"
+                }
+            },
+            // MÓDULO 5: Framework BBVA 1 (Spring Core)
+            {
+                module: 5, title: "Spring Core & Test",
+                text: "¿Qué sucede si Spring no encuentra un Bean para inyectar con `@Autowired`?",
+                code: `@Autowired\nprivate NotificacionService notificacion;`,
+                options: [
+                    "Inyecta null automáticamente.",
+                    "Lanza NoSuchBeanDefinitionException e impide que levante el contexto.",
+                    "Crea una instancia por defecto usando el constructor vacío.",
+                    "Lanza NullPointerException en el primer uso."
+                ],
+                answer: 1,
+                hint: {
+                    explanation: "Por defecto, `@Autowired(required=true)`. Si Spring no encuentra un Bean en el ApplicationContext que coincida con el tipo, el contexto de Spring fallará al arrancar lanzando NoSuchBeanDefinitionException.",
+                    oracle: "https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#beans-autowired-annotation",
+                    extra: "Baeldung: NoSuchBeanDefinitionException"
+                }
+            },
+            {
+                module: 5, title: "Spring Core & Test",
+                text: "En Mockito, ¿cuál es la diferencia clave entre `when().thenReturn()` y `doReturn().when()` al usar `@Spy`?",
+                code: `@Spy List<String> list = new ArrayList<>();\n\n// A) when(list.get(0)).thenReturn("APX");\n// B) doReturn("APX").when(list).get(0);`,
+                options: [
+                    "No hay diferencia, son idénticos.",
+                    "A llama al método real provocando IndexOutOfBounds, B no llama al método real.",
+                    "B llama al método real, A no.",
+                    "A solo funciona en Interfaces, B en Clases concretas."
+                ],
+                answer: 1,
+                hint: {
+                    explanation: "Al usar objetos reales (Spy), `when(spy.metodo())` primero evalúa `spy.metodo()`, llamando a la lógica real (si la lista está vacía, falla). `doReturn(...).when(spy).metodo()` evita llamar al método real, haciendo el mock seguro.",
+                    oracle: "https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mockito.html#13",
+                    extra: "Baeldung: Mockito When vs DoReturn"
+                }
+            },
+            {
+                module: 5, title: "Spring Core & Test",
+                text: "¿Cuál es el Scope por defecto de un Bean en Spring?",
+                code: `@Component\npublic class CalculadoraBean { }`,
+                options: ["Prototype", "Request", "Singleton", "Session"],
+                answer: 2,
+                hint: {
+                    explanation: "El scope por defecto es 'Singleton'. Spring creará una y solo una instancia de ese Bean por cada contenedor de Inversión de Control (IoC), la cual será compartida en cada inyección.",
+                    oracle: "https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#beans-factory-scopes",
+                    extra: "GeeksforGeeks: Spring Bean Scopes"
+                }
+            },
+            // MÓDULO 6: Framework BBVA 2 (Batch, REST)
+            {
+                module: 6, title: "Arquitectura y REST",
+                text: "En Spring Batch, ¿qué indica que un `ItemProcessor` retorne `null`?",
+                code: `public class FiltroProcessor implements ItemProcessor<Cliente, Cliente> {\n    public Cliente process(Cliente item) {\n        if (!item.isActivo()) return null;\n        return item;\n    }\n}`,
+                options: [
+                    "Detiene el Job con error (JobExecutionException).",
+                    "Filtra (descarta) el elemento, no lo pasa al ItemWriter.",
+                    "Se inserta un null en la base de datos.",
+                    "Reinicia el Step."
+                ],
+                answer: 1,
+                hint: {
+                    explanation: "En la especificación de Spring Batch, devolver `null` desde el método `process` de un ItemProcessor actúa como un filtro: le dice al framework que ignore este elemento y no lo pase a la fase de escritura (ItemWriter).",
+                    oracle: "https://docs.spring.io/spring-batch/docs/current/reference/html/readersAndWriters.html",
+                    extra: "Baeldung: Spring Batch ItemProcessor"
+                }
+            },
+            {
+                module: 6, title: "Arquitectura y REST",
+                text: "En el diseño de APIs REST, ¿cuál es la diferencia semántica principal entre PUT y POST?",
+                code: `// POST /clientes\n// PUT /clientes/123`,
+                options: [
+                    "POST es idempotente, PUT no lo es.",
+                    "PUT es idempotente, POST no lo es.",
+                    "POST envía datos en el Body, PUT en los Headers.",
+                    "Ninguna, son intercambiables."
+                ],
+                answer: 1,
+                hint: {
+                    explanation: "PUT es idempotente: ejecutar la misma petición PUT varias veces tiene el mismo efecto en el servidor que ejecutarla una vez (ej. actualizar un registro completo). POST no es idempotente: peticiones repetidas crearán múltiples recursos (ej. crear registros repetidos).",
+                    oracle: "https://www.rfc-editor.org/rfc/rfc7231#section-4.2.2",
+                    extra: "Codecademy: HTTP Methods"
+                }
+            },
+            {
+                module: 6, title: "Arquitectura y REST",
+                text: "En el ciclo de vida (Lifecycle) de Maven, ¿qué comando ejecuta las pruebas unitarias y empaqueta el código (ej. un JAR) sin instalarlo en el repositorio local .m2?",
+                code: `$ mvn clean ____?`,
+                options: ["install", "compile", "package", "deploy"],
+                answer: 2,
+                hint: {
+                    explanation: "El comando `mvn package` compila, corre los tests unitarios y empaqueta el código en un formato distribuible (JAR/WAR). `install` haría esto Y además lo copiaría al repositorio local `.m2`.",
+                    oracle: "https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html",
+                    extra: "Baeldung: Maven Lifecycle"
+                }
+            },
+            // MÓDULO 7: IA Copilot & Herramientas
+            {
+                module: 7, title: "Gen IA Copilot",
+                text: "¿Cómo utiliza GitHub Copilot el contexto para generar sugerencias de código Java/Spring precisas?",
+                code: `// Utilizando Copilot en IntelliJ...`,
+                options: [
+                    "Envía todo el repositorio completo a la nube en cada pulsación de tecla.",
+                    "Solo analiza la línea actual donde está el cursor.",
+                    "Lee el archivo actual, archivos abiertos en pestañas cercanas y firmas de métodos para enviar un 'prompt' contextual.",
+                    "Descarga el repositorio de Spring Framework localmente para entrenarse."
+                ],
+                answer: 2,
+                hint: {
+                    explanation: "Copilot utiliza el 'Neighboring Tabs' y el código alrededor del cursor. Agrupa fragmentos de código de pestañas abiertas y el archivo activo, creando un contexto limitado (token window) para el modelo LLM subyacente.",
+                    oracle: "https://docs.github.com/en/copilot/using-github-copilot",
+                    extra: "GitHub Blog: How Copilot works"
+                }
+            },
+            {
+                module: 7, title: "Gen IA Copilot",
+                text: "Desde el punto de vista de la seguridad en banca (ej. BBVA), ¿qué precaución crítica se debe tener al usar Gen IA Assistants en código fuente?",
+                code: `String dbPassword = "SuperSecretPassword123!";\n// Copilot prompt: "Optimiza la conexión a DB"`,
+                options: [
+                    "Asegurarse de que el asistente sea rápido.",
+                    "Jamás incluir credenciales en texto plano, PII o datos bancarios reales, pues el contexto podría ser procesado o almacenado externamente.",
+                    "Desactivar el asistente antes del commit.",
+                    "Solo usar Copilot para HTML, no para Java."
+                ],
+                answer: 1,
+                hint: {
+                    explanation: "La prevención de filtración de datos (DLP). Los modelos de IA procesan el texto en servidores de terceros (salvo modelos locales). Nunca se deben exponer credenciales (Secretos, API Keys) ni Información de Identificación Personal (PII).",
+                    oracle: "https://owasp.org/www-project-top-10/",
+                    extra: "Cybersecurity Data Privacy in AI"
+                }
+            },
+            {
+                module: 7, title: "Gen IA Copilot",
+                text: "¿Cuál es un patrón de 'Prompt Engineering' efectivo para generar Tests Unitarios en Spring Boot usando Copilot/ChatGPT?",
+                code: `// Prompt: "Haz un test para ClienteService"`,
+                options: [
+                    "Usar prompts extremadamente cortos.",
+                    "Proporcionar contexto (Clase + Dependencias Mocks), especificar el framework (JUnit 5 + Mockito) y pedir la convención given-when-then.",
+                    "Dejar que la IA adivine el framework leyendo la clase.",
+                    "Solo pedir 'Haz que la cobertura sea 100%'."
+                ],
+                answer: 1,
+                hint: {
+                    explanation: "El patrón de instrucción explícita. Un buen prompt reduce alucinaciones estableciendo las reglas claras: herramientas a usar (JUnit 5), estrategia (Mockito @InjectMocks) y la estructura del test (Given/When/Then).",
+                    oracle: "https://platform.openai.com/docs/guides/prompt-engineering",
+                    extra: "Baeldung: AI Assisted Testing"
+                }
+            }
+        ];
+
+        // ==========================================
+        // 2. GESTIÓN DE ESTADO
+        // ==========================================
+        const State = {
+            scores: JSON.parse(localStorage.getItem('apx_scores')) || { 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0 },
+            currentExamQuestions: [],
+            currentQuestionIndex: 0,
+            examMode: 'practice', // 'practice' or 'real'
+            examScore: 0,
+            timerInterval: null
+        };
+
+        // ==========================================
+        // 3. RENDERIZADO Y CONTROLADORES DE VISTA
+        // ==========================================
+        const App = {
+            init() {
+                this.navigate('dashboard');
+                this.updateNavUI('dashboard');
+            },
+            
+            navigate(viewId) {
+                const main = document.getElementById('main-content');
+                clearInterval(State.timerInterval); // limpiar timers
+                this.updateNavUI(viewId);
+
+                if (viewId === 'dashboard') main.innerHTML = this.views.dashboard();
+                else if (viewId === 'lab1') this.renderLab1(main);
+                else if (viewId === 'lab2') this.renderLab2(main);
+                else if (viewId === 'lab3') this.renderLab3(main);
+            },
+
+            updateNavUI(activeId) {
+                document.querySelectorAll('.nav-btn').forEach(btn => {
+                    btn.classList.remove('bg-slate-700', 'text-white', 'border-l-4', 'border-blue-500');
+                    if(btn.getAttribute('onclick').includes(activeId)) {
+                        btn.classList.add('bg-slate-700', 'text-white', 'border-l-4', 'border-blue-500');
+                    }
+                });
+            },
+
+            // --- VISTAS ESTATICAS ---
+            views: {
+                dashboard() {
+                    let totalAciertos = Object.values(State.scores).reduce((a, b) => a + b, 0);
+                    let maxAciertos = 21; // 3 preg * 7 mods
+                    let porcentaje = Math.round((totalAciertos / maxAciertos) * 100) || 0;
+                    
+                    let modsHtml = '';
+                    for(let i=1; i<=7; i++) {
+                        let aciertos = State.scores[i] || 0;
+                        modsHtml += `
+                            <div class="bg-slate-800 p-4 rounded-lg border ide-border fade-in shadow-lg">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="font-bold text-gray-200">Módulo ${i}</span>
+                                    <span class="text-xs font-mono px-2 py-1 bg-slate-900 rounded text-blue-400">${aciertos}/3 Aciertos</span>
+                                </div>
+                                <div class="w-full bg-slate-700 rounded-full h-2.5">
+                                  <div class="bg-blue-500 h-2.5 rounded-full" style="width: ${(aciertos/3)*100}%"></div>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    return `
+                        <div class="p-8 max-w-5xl mx-auto fade-in">
+                            <h2 class="text-3xl font-bold text-white mb-2"><i class="fa-solid fa-satellite-dish text-blue-500 mr-2"></i>Centro de Mando APX</h2>
+                            <p class="text-gray-400 mb-8">La repetición espaciada y el aprendizaje táctil fortalecen la mielinización neuronal. Monitorea tu retención aquí.</p>
+                            
+                            <div class="bg-slate-800 rounded-xl p-6 border ide-border flex items-center gap-8 mb-8 shadow-2xl">
+                                <div class="relative w-32 h-32 flex-shrink-0 flex items-center justify-center rounded-full border-4 border-slate-700 bg-slate-900 shadow-inner">
+                                    <div class="text-3xl font-black text-white">${porcentaje}%</div>
+                                    <svg class="absolute top-0 left-0 w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                                        <path class="text-blue-500" stroke-dasharray="${porcentaje}, 100" stroke="currentColor" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-xl font-bold text-white mb-1">Carga Cognitiva Actual</h3>
+                                    <p class="text-gray-400 text-sm">Has respondido correctamente ${totalAciertos} de ${maxAciertos} hitos requeridos para la certificación. Visita los laboratorios visuales si notas debilidad en algún módulo.</p>
+                                </div>
+                            </div>
+
+                            <h3 class="text-lg font-bold text-white mb-4"><i class="fa-solid fa-server mr-2"></i>Retención por Módulos</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                ${modsHtml}
+                            </div>
+                        </div>
+                    `;
+                }
+            },
+
+            // ==========================================
+            // LABORATIO 1: JVM (Stack vs Heap)
+            // ==========================================
+            renderLab1(container) {
+                container.innerHTML = `
+                    <div class="p-8 h-full flex flex-col fade-in">
+                        <div class="mb-6">
+                            <h2 class="text-2xl font-bold text-white"><i class="fa-solid fa-microchip text-green-400 mr-2"></i>Lab 1: JVM Visual Inspector</h2>
+                            <p class="text-gray-400 text-sm">Codificación Dual: Observa cómo se comportan las referencias (Stack) y los objetos (Heap). "Toco y aprendo".</p>
+                        </div>
+                        
+                        <!-- Panel de Controles -->
+                        <div class="flex gap-4 mb-6 bg-slate-800 p-4 rounded-lg border ide-border">
+                            <button onclick="Lab1.addPrimitive()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded font-bold shadow-lg transition-all"><i class="fa-solid fa-plus mr-1"></i> int x = 5</button>
+                            <button onclick="Lab1.addObject()" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded font-bold shadow-lg transition-all"><i class="fa-solid fa-cube mr-1"></i> new String()</button>
+                            <button onclick="Lab1.nullify()" class="bg-slate-600 hover:bg-slate-500 text-white px-4 py-2 rounded font-bold shadow-lg transition-all"><i class="fa-solid fa-unlink mr-1"></i> s = null</button>
+                            <button onclick="Lab1.runGC()" class="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded font-bold ml-auto shadow-lg transition-all"><i class="fa-solid fa-broom mr-1"></i> System.gc()</button>
+                        </div>
+
+                        <!-- Área de Memoria -->
+                        <div class="flex-1 flex gap-8">
+                            <!-- STACK -->
+                            <div class="flex-1 bg-slate-800 border ide-border rounded-lg p-4 flex flex-col">
+                                <h3 class="text-center font-bold text-gray-300 border-b ide-border pb-2 mb-4">STACK (LIFO)</h3>
+                                <div id="lab1-stack" class="flex-1 flex flex-col-reverse gap-2 overflow-y-auto"></div>
+                            </div>
+                            <!-- HEAP -->
+                            <div class="flex-[2] bg-slate-800 border ide-border rounded-lg p-4 flex flex-col relative overflow-hidden">
+                                <h3 class="text-center font-bold text-gray-300 border-b ide-border pb-2 mb-4">HEAP (Objetos Dinámicos)</h3>
+                                <div id="lab1-heap" class="flex-1 relative p-4 flex flex-wrap gap-4 content-start"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                Lab1.init();
+            },
+
+            // ==========================================
+            // LABORATIO 2: SPRING DI Context
+            // ==========================================
+            renderLab2(container) {
+                container.innerHTML = `
+                    <div class="p-8 h-full flex flex-col fade-in">
+                        <div class="mb-6">
+                            <h2 class="text-2xl font-bold text-white"><i class="fa-brands fa-envira text-green-500 mr-2"></i>Lab 2: Spring IoC & DI</h2>
+                            <p class="text-gray-400 text-sm">Simula el ApplicationContext. Haz clic en los Beans para registrarlos y luego en el @Autowired para inyectar.</p>
+                        </div>
+                        
+                        <div class="flex-1 flex gap-8">
+                            <!-- Classpath / Components -->
+                            <div class="w-1/3 bg-slate-800 border ide-border rounded-lg p-4">
+                                <h3 class="font-bold text-blue-400 mb-4 text-center">Tus Clases (Classpath)</h3>
+                                <div class="flex flex-col gap-4">
+                                    <div class="bg-slate-900 border ide-border p-4 rounded cursor-pointer hover:border-green-500 transition-all memory-block group" onclick="Lab2.registerBean('UserRepository')">
+                                        <div class="text-green-400 font-mono text-xs">@Repository</div>
+                                        <div class="text-white font-bold">UserRepository</div>
+                                        <div class="text-xs text-gray-500 mt-2 opacity-0 group-hover:opacity-100 transition-all">Click para crear Bean</div>
+                                    </div>
+                                    <div class="bg-slate-900 border ide-border p-4 rounded cursor-pointer hover:border-green-500 transition-all memory-block group" onclick="Lab2.registerBean('UserService')">
+                                        <div class="text-green-400 font-mono text-xs">@Service</div>
+                                        <div class="text-white font-bold">UserService</div>
+                                        <div class="text-xs text-gray-500 mt-2 opacity-0 group-hover:opacity-100 transition-all">Click para crear Bean</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Application Context -->
+                            <div class="w-2/3 bg-slate-800 border border-green-700/50 rounded-lg p-4 relative shadow-[0_0_15px_rgba(34,197,94,0.1)]">
+                                <h3 class="font-bold text-green-500 mb-4 text-center"><i class="fa-solid fa-box-open mr-1"></i> Spring ApplicationContext</h3>
+                                <div id="lab2-context" class="flex gap-4 mb-8 min-h-[100px] bg-slate-900/50 p-4 rounded border border-dashed border-gray-600">
+                                    <span class="text-gray-600 italic text-sm w-full text-center mt-6">Contexto vacío. Registra componentes.</span>
+                                </div>
+
+                                <h3 class="font-bold text-purple-400 mb-4 text-center">Aplicación Main</h3>
+                                <div class="bg-slate-900 border ide-border p-6 rounded relative">
+                                    <div class="text-purple-400 font-mono text-xs mb-2">@RestController</div>
+                                    <div class="text-white font-bold mb-4">UserController</div>
+                                    
+                                    <div class="bg-slate-800 p-3 rounded font-mono text-xs flex justify-between items-center">
+                                        <div>
+                                            <span class="text-yellow-400">@Autowired</span><br>
+                                            <span class="text-blue-400">private</span> <span class="text-green-300">UserService</span> userService;
+                                        </div>
+                                        <button onclick="Lab2.inject()" class="bg-yellow-600 hover:bg-yellow-500 text-black font-bold py-1 px-3 rounded shadow transition-all">Ejecutar Inyección</button>
+                                    </div>
+                                    <div id="lab2-status" class="mt-4 text-xs font-bold text-center text-red-400 hidden"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                Lab2.init();
+            },
+
+            // ==========================================
+            // LABORATIO 3: STREAMS
+            // ==========================================
+            renderLab3(container) {
+                container.innerHTML = `
+                    <div class="p-8 h-full flex flex-col fade-in">
+                        <div class="mb-6">
+                            <h2 class="text-2xl font-bold text-white"><i class="fa-solid fa-filter text-purple-400 mr-2"></i>Lab 3: Tubería Streams</h2>
+                            <p class="text-gray-400 text-sm">Predicción dopaminérgica: ¿Qué pasará con el arreglo al aplicar los métodos funcionales?</p>
+                        </div>
+                        
+                        <div class="bg-slate-800 border ide-border rounded-lg p-6 flex flex-col items-center">
+                            
+                            <div class="flex gap-2 mb-8" id="lab3-source">
+                                <!-- Generado por JS -->
+                            </div>
+
+                            <div class="flex flex-col gap-2 w-full max-w-md">
+                                <button onclick="Lab3.applyFilter()" class="bg-slate-700 hover:bg-slate-600 border border-purple-500 text-white p-3 rounded flex justify-between items-center font-mono transition-all">
+                                    <span>.filter(n -> n % 2 == 0)</span> <i class="fa-solid fa-caret-down text-purple-400"></i>
+                                </button>
+                                <div class="flex gap-2 justify-center my-2 h-10 transition-all" id="lab3-step1"></div>
+
+                                <button onclick="Lab3.applyMap()" class="bg-slate-700 hover:bg-slate-600 border border-blue-500 text-white p-3 rounded flex justify-between items-center font-mono transition-all">
+                                    <span>.map(n -> n * 10)</span> <i class="fa-solid fa-caret-down text-blue-400"></i>
+                                </button>
+                                <div class="flex gap-2 justify-center my-2 h-10 transition-all" id="lab3-step2"></div>
+
+                                <button onclick="Lab3.applyCollect()" class="bg-slate-700 hover:bg-slate-600 border border-green-500 text-white p-3 rounded flex justify-between items-center font-mono transition-all">
+                                    <span>.collect(Collectors.toList())</span> <i class="fa-solid fa-flag-checkered text-green-400"></i>
+                                </button>
+                                <div class="flex gap-2 justify-center mt-4 h-12 bg-slate-900 border border-dashed border-gray-600 p-2 rounded w-full items-center" id="lab3-result">
+                                    <span class="text-gray-500 text-xs w-full text-center">Esperando Terminal Operation...</span>
+                                </div>
+                            </div>
+                            
+                            <button onclick="Lab3.reset()" class="mt-8 text-sm text-gray-400 hover:text-white underline"><i class="fa-solid fa-rotate-right"></i> Reiniciar Tubería</button>
+                        </div>
+                    </div>
+                `;
+                Lab3.init();
+            },
+
+            // ==========================================
+            // MOTOR DE EXAMEN Y SIMULADOR
+            // ==========================================
+            setupExam(mode) {
+                State.examMode = mode;
+                State.currentExamQuestions = [...questionsDB].sort(() => 0.5 - Math.random()); // Shuffle
+                State.currentQuestionIndex = 0;
+                State.examScore = 0;
+                
+                this.updateNavUI(mode); // update sidebar visually
+
+                if(mode === 'real') {
+                    // Iniciar Timer (90 mins = 5400 segs)
+                    let timeLeft = 5400;
+                    State.timerInterval = setInterval(() => {
+                        timeLeft--;
+                        let m = Math.floor(timeLeft / 60);
+                        let s = timeLeft % 60;
+                        let timerDiv = document.getElementById('exam-timer');
+                        if(timerDiv) timerDiv.innerHTML = `<i class="fa-regular fa-clock"></i> ${m}:${s.toString().padStart(2, '0')}`;
+                        if(timeLeft <= 0) { clearInterval(State.timerInterval); this.finishExam(); }
+                    }, 1000);
+                }
+                
+                this.renderExam();
+            },
+
+            renderExam() {
+                const main = document.getElementById('main-content');
+                if (State.currentQuestionIndex >= State.currentExamQuestions.length) {
+                    this.finishExam();
+                    return;
+                }
+
+                const q = State.currentExamQuestions[State.currentQuestionIndex];
+                const isPractice = State.examMode === 'practice';
+                const progress = ((State.currentQuestionIndex) / State.currentExamQuestions.length) * 100;
+
+                let optionsHtml = q.options.map((opt, idx) => `
+                    <button onclick="App.checkAnswer(${idx}, this)" class="exam-option w-full text-left p-4 bg-slate-800 border ide-border rounded-lg hover:bg-slate-700 transition-all flex items-center gap-3 group">
+                        <div class="w-6 h-6 rounded-full border-2 border-slate-500 flex items-center justify-center text-xs font-bold group-hover:border-blue-400 group-hover:text-blue-400 transition-all">${String.fromCharCode(65+idx)}</div>
+                        <span class="font-mono text-sm">${opt.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</span>
+                    </button>
+                `).join('');
+
+                main.innerHTML = `
+                    <div class="h-full flex flex-col fade-in">
+                        <!-- Header Examen -->
+                        <div class="bg-slate-800 border-b ide-border p-4 flex justify-between items-center shadow-lg z-10">
+                            <div>
+                                <span class="bg-blue-900 text-blue-300 text-xs font-bold px-2 py-1 rounded uppercase tracking-wider">MOD ${q.module}: ${q.title}</span>
+                                <span class="text-gray-400 text-sm ml-4">Pregunta ${State.currentQuestionIndex + 1} de ${State.currentExamQuestions.length}</span>
+                            </div>
+                            ${!isPractice ? `<div id="exam-timer" class="text-red-400 font-mono font-bold text-lg"><i class="fa-regular fa-clock"></i> 90:00</div>` : `<div class="text-green-400 font-mono font-bold text-lg"><i class="fa-solid fa-graduation-cap"></i> Práctica</div>`}
+                        </div>
+                        <div class="w-full bg-slate-700 h-1">
+                            <div class="bg-blue-500 h-1 transition-all duration-500" style="width: ${progress}%"></div>
+                        </div>
+
+                        <!-- Pregunta -->
+                        <div class="p-8 max-w-4xl mx-auto w-full flex-1 overflow-y-auto">
+                            <h3 class="text-xl font-bold text-white mb-4 leading-relaxed">${q.text}</h3>
+                            <pre class="bg-slate-950 border ide-border p-4 rounded-lg mb-8 shadow-inner overflow-x-auto"><code class="text-gray-300">${q.code.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</code></pre>
+                            
+                            <div class="flex flex-col gap-3" id="options-container">
+                                ${optionsHtml}
+                            </div>
+
+                            ${isPractice ? `
+                                <!-- Pista Pedagogica (Solo Practica) -->
+                                <div class="mt-8">
+                                    <button onclick="document.getElementById('hint-box').classList.toggle('hidden')" class="text-yellow-500 hover:text-yellow-400 text-sm font-bold flex items-center gap-2 mb-2 transition-all">
+                                        <i class="fa-solid fa-lightbulb"></i> Ver Pista y Fundamento Teórico
+                                    </button>
+                                    <div id="hint-box" class="hidden bg-yellow-900/20 border border-yellow-700/50 rounded-lg p-4 text-sm text-yellow-100 shadow-inner">
+                                        <p class="mb-3"><strong><i class="fa-solid fa-brain mr-1"></i> Análisis Cognitivo:</strong> ${q.hint.explanation}</p>
+                                        <div class="flex flex-col gap-1 text-xs">
+                                            <a href="${q.hint.oracle}" target="_blank" class="text-blue-400 hover:underline"><i class="fa-solid fa-book mr-1"></i> Documentación Oficial</a>
+                                            <span class="text-gray-400"><i class="fa-solid fa-link mr-1"></i> Ref: ${q.hint.extra}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ` : ''}
+
+                            <div class="mt-8 text-right">
+                                <button id="next-btn" onclick="App.nextQuestion()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-6 rounded shadow-lg hidden transition-all">Siguiente <i class="fa-solid fa-arrow-right ml-2"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            },
+
+            checkAnswer(selectedIdx, btnElement) {
+                const q = State.currentExamQuestions[State.currentQuestionIndex];
+                const isPractice = State.examMode === 'practice';
+                const isCorrect = selectedIdx === q.answer;
+
+                // Bloquear opciones
+                const buttons = document.querySelectorAll('.exam-option');
+                buttons.forEach((btn, idx) => {
+                    btn.disabled = true;
+                    btn.classList.remove('hover:bg-slate-700');
+                    if(idx === q.answer) {
+                        btn.classList.add('bg-green-900/50', 'border-green-500', 'text-green-100');
+                        btn.querySelector('div').classList.add('bg-green-500', 'text-white', 'border-green-500');
+                    } else if (idx === selectedIdx && !isCorrect) {
+                        btn.classList.add('bg-red-900/50', 'border-red-500', 'text-red-100');
+                        btn.querySelector('div').classList.add('bg-red-500', 'text-white', 'border-red-500');
+                    } else {
+                        btn.classList.add('opacity-50');
+                    }
+                });
+
+                if(isCorrect) {
+                    State.examScore++;
+                    if(isPractice) {
+                        // Guardar en Storage si estamos practicando (retención)
+                        State.scores[q.module] = Math.min((State.scores[q.module] || 0) + 1, 3);
+                        localStorage.setItem('apx_scores', JSON.stringify(State.scores));
+                    }
+                }
+
+                if(isPractice && !isCorrect) {
+                    // Forzar abrir pista en error (Neurociencia: Feedback inmediato)
+                    document.getElementById('hint-box').classList.remove('hidden');
+                }
+
+                document.getElementById('next-btn').classList.remove('hidden');
+            },
+
+            nextQuestion() {
+                State.currentQuestionIndex++;
+                this.renderExam();
+            },
+
+            finishExam() {
+                clearInterval(State.timerInterval);
+                const main = document.getElementById('main-content');
+                const total = State.currentExamQuestions.length;
+                const percent = Math.round((State.examScore / total) * 100);
+                const passed = percent >= 70;
+
+                main.innerHTML = `
+                    <div class="flex items-center justify-center h-full fade-in">
+                        <div class="bg-slate-800 p-10 rounded-xl border ide-border text-center max-w-lg shadow-2xl">
+                            <i class="fa-solid ${passed ? 'fa-medal text-yellow-400' : 'fa-triangle-exclamation text-red-500'} text-6xl mb-4"></i>
+                            <h2 class="text-3xl font-bold text-white mb-2">Simulación Completada</h2>
+                            <p class="text-gray-400 mb-6">Modo: ${State.examMode === 'real' ? 'Certificación Oficial' : 'Práctica Guiada'}</p>
+                            
+                            <div class="text-5xl font-black ${passed ? 'text-green-500' : 'text-red-500'} mb-2">${percent}%</div>
+                            <p class="text-white font-bold mb-8">Puntuación: ${State.examScore} / ${total}</p>
+
+                            ${passed 
+                                ? `<div class="bg-green-900/30 text-green-300 p-3 rounded mb-6 text-sm border border-green-800">¡Aprobado! Tienes el nivel cognitivo requerido para la certificación APX.</div>`
+                                : `<div class="bg-red-900/30 text-red-300 p-3 rounded mb-6 text-sm border border-red-800">No aprobado (Requiere 70%). Revisa el Tablero de Progreso e interactúa con los laboratorios.</div>`
+                            }
+
+                            <button onclick="App.navigate('dashboard')" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 rounded shadow-lg transition-all w-full">Volver al Dashboard</button>
+                        </div>
+                    </div>
+                `;
+            }
+        };
+
+        // ==========================================
+        // LÓGICA LAB 1: JVM
+        // ==========================================
+        const Lab1 = {
+            stackArr: [], heapArr: [], counter: 0,
+            init() { this.stackArr = []; this.heapArr = []; this.counter = 0; this.updateUI(); },
+            addPrimitive() {
+                if(this.stackArr.length > 5) return;
+                this.stackArr.push({ type: 'prim', label: 'int x = 5' });
+                this.updateUI();
+            },
+            addObject() {
+                if(this.stackArr.length > 5) return;
+                this.counter++;
+                const objId = 'obj_'+this.counter;
+                this.heapArr.push({ id: objId, type: 'String', refCount: 1 });
+                this.stackArr.push({ type: 'ref', label: `String s${this.counter}`, target: objId });
+                this.updateUI();
+            },
+            nullify() {
+                const refIdx = this.stackArr.findIndex(i => i.type === 'ref' && i.target !== null);
+                if(refIdx > -1) {
+                    const targetId = this.stackArr[refIdx].target;
+                    this.stackArr[refIdx].target = null;
+                    this.stackArr[refIdx].label += " = null";
+                    // decrease ref count in heap
+                    let hObj = this.heapArr.find(h => h.id === targetId);
+                    if(hObj) hObj.refCount--;
+                    this.updateUI();
+                }
+            },
+            runGC() {
+                // Elimina objetos de Heap con refCount === 0
+                this.heapArr = this.heapArr.filter(h => h.refCount > 0);
+                this.updateUI();
+                
+                // Efecto visual GC
+                const heapDiv = document.getElementById('lab1-heap');
+                heapDiv.style.backgroundColor = 'rgba(239, 68, 68, 0.2)';
+                setTimeout(() => heapDiv.style.backgroundColor = 'transparent', 300);
+            },
+            updateUI() {
+                const stackDiv = document.getElementById('lab1-stack');
+                const heapDiv = document.getElementById('lab1-heap');
+                
+                stackDiv.innerHTML = this.stackArr.map(item => `
+                    <div class="bg-slate-700 p-2 rounded text-xs font-mono border-l-4 ${item.type === 'prim' ? 'border-yellow-400' : (item.target ? 'border-blue-400' : 'border-gray-500')} fade-in shadow">
+                        <span class="${item.type === 'prim' ? 'text-yellow-200' : 'text-blue-200'}">${item.label}</span>
+                        ${item.target ? `<div class="text-gray-500 ml-2">-> [ref: ${item.target}]</div>` : ''}
+                    </div>
+                `).join('');
+
+                heapDiv.innerHTML = this.heapArr.map(item => `
+                    <div class="w-24 h-24 rounded-full flex items-center justify-center flex-col text-xs font-mono shadow-lg transition-all ${item.refCount > 0 ? 'bg-blue-900 border-2 border-blue-400 text-blue-100' : 'bg-red-900/50 border-2 border-red-500 border-dashed text-red-300 opacity-70'} memory-block">
+                        <i class="fa-solid fa-box text-xl mb-1"></i>
+                        <span>${item.type}</span>
+                        <span class="text-[10px] opacity-60">${item.id}</span>
+                        ${item.refCount === 0 ? '<span class="text-[9px] mt-1 bg-red-600 px-1 rounded">Huérfano (GC)</span>' : ''}
+                    </div>
+                `).join('');
+            }
+        };
+
+        // ==========================================
+        // LÓGICA LAB 2: SPRING DI
+        // ==========================================
+        const Lab2 = {
+            context: [],
+            init() { this.context = []; this.updateUI(); },
+            registerBean(name) {
+                if(!this.context.includes(name)) {
+                    this.context.push(name);
+                    this.updateUI();
+                }
+            },
+            inject() {
+                const status = document.getElementById('lab2-status');
+                status.classList.remove('hidden');
+                
+                // Revisa si UserService está en el contexto
+                if(this.context.includes('UserService')) {
+                    status.innerHTML = `<i class="fa-solid fa-check-circle mr-1"></i> Inyección Exitosa. ApplicationContext enlazado.`;
+                    status.className = "mt-4 text-xs font-bold text-center text-green-400 fade-in";
+                    
+                    // Efecto visual
+                    document.getElementById('lab2-context').style.borderColor = "#22c55e";
+                } else {
+                    status.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1"></i> NoSuchBeanDefinitionException: No se encontró UserService en el Contexto.`;
+                    status.className = "mt-4 text-xs font-bold text-center text-red-400 fade-in";
+                }
+            },
+            updateUI() {
+                const ctxDiv = document.getElementById('lab2-context');
+                if(this.context.length === 0) {
+                    ctxDiv.innerHTML = `<span class="text-gray-600 italic text-sm w-full text-center mt-6">Contexto vacío. Registra componentes.</span>`;
+                } else {
+                    ctxDiv.innerHTML = this.context.map(name => `
+                        <div class="bg-green-900/40 border border-green-500 rounded p-2 flex flex-col items-center justify-center fade-in w-24 h-24 shadow-lg text-center">
+                            <i class="fa-solid fa-leaf text-green-400 text-2xl mb-1"></i>
+                            <span class="text-[10px] font-mono text-green-100 font-bold break-words w-full">${name}</span>
+                            <span class="text-[8px] text-gray-400 mt-1">Singleton</span>
+                        </div>
+                    `).join('');
+                }
+                document.getElementById('lab2-status').classList.add('hidden');
+            }
+        };
+
+        // ==========================================
+        // LÓGICA LAB 3: STREAMS
+        // ==========================================
+        const Lab3 = {
+            data: [1, 2, 3, 4, 5, 6],
+            step: 0,
+            init() { this.reset(); },
+            reset() {
+                this.step = 0;
+                document.getElementById('lab3-source').innerHTML = this.renderBlocks(this.data, 'bg-slate-600');
+                document.getElementById('lab3-step1').innerHTML = '';
+                document.getElementById('lab3-step2').innerHTML = '';
+                document.getElementById('lab3-result').innerHTML = '<span class="text-gray-500 text-xs w-full text-center">Esperando Terminal Operation...</span>';
+            },
+            applyFilter() {
+                if(this.step !== 0) return;
+                const result = this.data.filter(n => n % 2 === 0);
+                document.getElementById('lab3-step1').innerHTML = this.renderBlocks(result, 'bg-purple-600 fade-in');
+                this.step = 1;
+            },
+            applyMap() {
+                if(this.step !== 1) { alert("Sigue el flujo de la tubería secuencialmente (primero Filter)."); return; }
+                const filtered = this.data.filter(n => n % 2 === 0);
+                const result = filtered.map(n => n * 10);
+                document.getElementById('lab3-step2').innerHTML = this.renderBlocks(result, 'bg-blue-600 fade-in');
+                this.step = 2;
+            },
+            applyCollect() {
+                if(this.step !== 2) { alert("Aplica Map antes de Collect."); return; }
+                const filtered = this.data.filter(n => n % 2 === 0);
+                const result = filtered.map(n => n * 10);
+                document.getElementById('lab3-result').innerHTML = `<div class="font-mono text-green-400 text-lg font-bold fade-in w-full text-center tracking-widest">[ ${result.join(', ')} ]</div>`;
+                this.step = 3;
+            },
+            renderBlocks(arr, colorClass) {
+                return arr.map(n => `<div class="w-10 h-10 rounded-lg shadow-lg flex items-center justify-center font-bold text-white ${colorClass} border border-white/20 transition-all">${n}</div>`).join('');
+            }
+        };
+
+        // Inicializar APP
+        document.addEventListener('DOMContentLoaded', () => {
+            App.init();
+        });
+    </script>
+</body>
+</html>
